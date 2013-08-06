@@ -47,7 +47,8 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
     :returns: list of extinction values corresponding to the provided list of
         filters. If a filter is ambiguous and has multiple matches (e.g. 'V'),
         the average of all matches is returned. This allows an estimate even
-        if the specific filter is not listed.
+        if the specific filter is not listed. Returns None (and warns) if
+        filter is not found
     """
     try:
         float(ra)
@@ -59,7 +60,9 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
         ra = str(dec) + 'd'
     except ValueError:
         pass
+    list_out = True
     if isinstance(filters, basestring):
+        list_out = False
         filters = [filters]
     get_params = {'lon': str(ra),
                   'lat': str(dec),
@@ -100,8 +103,10 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
                      'Averaging {} values.'.format(len(matches)))
             extinctions += [sum(matches) / len(matches)]
 
-
-    return extinctions if len(extinctions) > 1 else extinctions[0]
+    if as_dict:
+        return dict(zip(filters, extinctions))
+    else:
+        return extinctions if list_out else extinctions[0]
 
 
 if __name__ == '__main__':
