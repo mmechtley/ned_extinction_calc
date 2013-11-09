@@ -5,7 +5,7 @@ Creates an HTTP request based on supplied coordinates and parses the response.
 from __future__ import division
 import httplib
 import urllib
-import re
+import HTMLParser
 from warnings import warn
 
 __author__ = 'Matt Mechtley'
@@ -20,6 +20,47 @@ class HTTPResponseError(Exception):
         self.response = response
         self.message = 'Bad response from server\n{} {}'.format(
             response.status, response.reason)
+
+
+class NEDParser(HTMLParser.HTMLParser):
+    """
+    A very rough HTML parser for the NED reults. It is not very robust to
+    even minor changes in the NED output.
+    """
+    def __init__(self):
+        self.extinctions = dict()
+        self._working_entry = tuple()
+        self._enabled = False
+        HTMLParser.HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'div':
+            for attr in attrs:
+                if attr == ('id', 'moreBANDS'):
+                    self._enabled = True
+        if tag == 'tr':
+            self._working_entry = tuple()
+        return
+
+    def handle_endtag(self, tag):
+        if tag == 'div' and self._enabled:
+            self._enabled = False
+        if tag == 'tr':
+            self._ingest_working_tuple()
+        return
+
+    def handle_data(self, data):
+        self._working_entry += (data, )
+        return
+
+    def _ingest_working_tuple(self):
+        filt_name = ' '.join(self._working_entry[0:2])
+        try:
+            filt_extinction = float(self._working_entry[-1])
+            self.extinctions[filt_name] = filt_extinction
+        except ValueError:
+            pass
+        return
 
 
 def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
@@ -82,24 +123,21 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
     if response.status != httplib.OK:
         raise HTTPResponseError(response)
 
+    parser = NEDParser()
+    for line in html_output:
+        parser.feed(line)
+
     extinctions = []
     for filt in filters:
-        filt_s = [re.escape(comp) for comp in filt.split()]
-        tdtd = re.escape('</td><td>')
-        pat = re.escape('<tr>')+ '.*' + re.escape('<td>') + '\s*'
-        pat += ('\s*' + tdtd + '\s*').join(filt_s)
-        pat += '\s*' + tdtd + '.*' + tdtd + '\s*([0-9.]+)\s*'
-        pat += re.escape('</td></tr>')
-        pat = re.compile(pat)
-        matches = [pat.search(line) for line in html_output]
-        matches = [float(mat.group(1)) for mat in matches if mat is not None]
+        matches = [ext for name, ext in parser.extinctions.iteritems()
+                   if filt in name]
 
         if len(matches) == 0:
             warn('No filter found matching "{}".'.format(filt))
-            extinctions = [None]
+            extinctions += [None]
         else:
             if len(matches) > 1:
-                warn('Multiple filters found matching "{}".'.format(filt) +
+                warn('Multiple filters found matching "{}". '.format(filt) +
                      'Averaging {} values.'.format(len(matches)))
             extinctions += [sum(matches) / len(matches)]
 
