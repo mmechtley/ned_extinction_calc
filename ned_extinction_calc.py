@@ -57,7 +57,7 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
         pass
     try:
         float(dec)
-        ra = str(dec) + 'd'
+        dec = str(dec) + 'd'
     except ValueError:
         pass
     list_out = True
