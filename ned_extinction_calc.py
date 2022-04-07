@@ -11,7 +11,7 @@ from warnings import warn
 
 
 
-__author__ = 'Matt Mechtley'
+__author__ = 'Mira Mechtley'
 __copyright__ = '2012, Creative Commons Attribution-ShareAlike 3.0'
 
 _server = 'ned.ipac.caltech.edu:80'
