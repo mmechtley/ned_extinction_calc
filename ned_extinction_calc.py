@@ -3,10 +3,13 @@ Programmatic interface to the NED Galactic Redding and Extinction Calculator.
 Creates an HTTP request based on supplied coordinates and parses the response.
 """
 from __future__ import division
-import httplib
+import http.client as httplib
 import urllib
-import HTMLParser
+import html.parser as HTMLParser
 from warnings import warn
+
+
+
 
 __author__ = 'Matt Mechtley'
 __copyright__ = '2012, Creative Commons Attribution-ShareAlike 3.0'
@@ -102,7 +105,7 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
     except ValueError:
         pass
     list_out = True
-    if isinstance(filters, basestring):
+    if isinstance(filters,str):
         list_out = False
         filters = [filters]
     get_params = {'lon': str(ra),
@@ -115,10 +118,10 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
                   'out_equinox': 'J2000.0'}
 
     conn = httplib.HTTPConnection(_server)
-    conn.request('GET', _request_url + urllib.urlencode(get_params),
+    conn.request('GET', _request_url + urllib.parse.urlencode(get_params),
                  headers={'Content-type': 'application/x-www-form-urlencoded'})
     response = conn.getresponse()
-    html_output = response.read().split('\n')
+    html_output = str(response.read()).split('\\n')
     conn.close()
     if response.status != httplib.OK:
         raise HTTPResponseError(response)
@@ -129,7 +132,7 @@ def request_extinctions(ra, dec, filters=('SDSS g',), coord_system='Equatorial',
 
     extinctions = []
     for filt in filters:
-        matches = [ext for name, ext in parser.extinctions.iteritems()
+        matches = [ext for name, ext in parser.extinctions.items()
                    if filt in name]
 
         if len(matches) == 0:
@@ -154,9 +157,9 @@ if __name__ == '__main__':
         with open(sys.argv[2]) as f:
             lines = f.readlines()
     except (IOError, IndexError):
-        print __doc__
+        print (__doc__)
         exit(1)
 
     for line in lines:
         ra, dec = line.strip().split()
-        print request_extinctions(ra, dec, filters=[filt])
+        print (request_extinctions(ra, dec, filters=[filt]))
