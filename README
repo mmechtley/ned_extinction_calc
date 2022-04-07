@@ -1,4 +1,4 @@
-Matt Mechtley - Aug 2013 - https://github.com/mmechtley
+Mira Mechtley - Aug 2013 - https://github.com/mmechtley
 Python programmatic interface to the NASA/IPAC Extragalactic Database (NED)
 Galactic Extinction Calculator. This module builds an HTTP request based on the
 user-supplied coordinates and parses the response HTML to extract A_lambda
